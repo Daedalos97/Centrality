@@ -14,7 +14,11 @@ public class Centrality {
     
     private static void main(String[] args) {
         Centrality c = new Centrality();
-        g.read(args[0]);
+        try {
+            g.read(args[0]);
+        } catch (IOException IOE) {
+            IOE.printStackTrace();
+        }
         g.printEdgeMatrix();
     }
     
