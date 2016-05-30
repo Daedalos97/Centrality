@@ -4,53 +4,60 @@ import java.util.Scanner;
 import java.io.IOException;
 import java.io.FileReader;
 import java.io.LineNumberReader;
-import java.io.File;
 
 /**
  * Implements a class which can read an edge data file and produce an adjacency
- * matrix.
- * @author Sam 21725083, Brayn Trac .
+ * matrix as the output.
+ * @author Sam 21725083, Brayn Trac
  */
 public class Graph {
     private int[][] matrix; // The adjacency matrix of the graph from the data supplied.
     private int[] nodes; // The array of the unique nodes in graph sorted in ascending order.
-    private int nodeNum = 0; // Used to hold the length of vertices in this graph.
+    private int nodeNum; // Used to hold the length of vertices in this graph.
     
     /**
-     * Reads the edge data from an input file.
+     * 
+     */
+    public Graph() {
+        this.nodeNum = 0;
+    }
+    
+    //Store verticies in a different way, before putting them into the array.
+    /**
+     * 
      * @param filename Local path to the file and the extension e.g. ".txt".
      * @throws IOException If file is not in the local directory.
      */
     public void read(String filename) throws IOException {
         try {
-            File file = new File(Graph.class.getProtectionDomain().getCodeSource().getLocation().getFile());        
-            String path = file.getParent() + File.separator + filename + ".txt";
-            //Find out the max number of nodes in the graph.
+            //File file = new File(Graph.class.getProtectionDomain().getCodeSource().getLocation().getFile());        
+            //String path = file.getParent() + File.separator + filename + ".txt";
+            String path = filename + ".txt";
             LineNumberReader  lnr = new LineNumberReader(new FileReader(path));
             lnr.skip(Long.MAX_VALUE);
             int lines = lnr.getLineNumber();
             lnr.close();
-            nodes = new int[(lines*2)]; //Create array with max size
+            nodes = new int[(lines*2)+1]; // There can only ever be twice as many unique nodes as there are lines of edge data.
+            /*for (int i = 0; i < nodes.length; i++) {
+                nodes[i] = -1;
+            }*/
             Scanner scan = new Scanner(new FileReader(path));
             while (scan.hasNextLine()) {
                 for (String s : scan.nextLine().split(" "))
-                    addNode(Integer.parseInt(s)); //Check nodes are unique.
-                    
+                    addNode(Integer.parseInt(s));
             }
-            quickSort(nodes, 0, nodeNum-1); //Sort nodes so we can binary search them later.
-            
-            //Create Adjacency matrix from the number of nodes in graph. nodes[i] --> matrix[i][...]
-            //nodes[i] corresponds to i th position in the matrix, so we have nodes[i] corresponds to
-            //the relationship between node i and all the other nodes.
+            quickSort(nodes, 0, nodeNum-1);
             matrix = new int[nodeNum][nodeNum];
             for (int i = 0; i < matrix.length; i++) {
                 for (int j = 0; j < matrix.length; j++) matrix[i][j] = 0;
             }
-            //Writes edges into the adjacency matrix.
             scan = new Scanner(new FileReader(path));
             while (scan.hasNextLine()) {
                 String[] line = scan.nextLine().split(" ");
-                matrix[searchNodes(Integer.parseInt(line[0]))][searchNodes(Integer.parseInt(line[1]))] = 1;
+                int i = BinarySearch(Integer.parseInt(line[0]));
+                int j = BinarySearch(Integer.parseInt(line[1]));
+                matrix[i][j] = 1;
+                matrix[j][i] = 1; //To make the graph directed adjust this comment.
             }
         } catch (IOException IOE) {
             usage();
@@ -59,7 +66,7 @@ public class Graph {
     }
     
     /**
-     * Outputs the correct usage of the read method, if the method is called and
+     * Outputs the correct usage of the read method if, the method is called and
      * no file is readable.
      */
     private void usage() {
@@ -68,7 +75,6 @@ public class Graph {
     }
     
     /**
-     * Adds a node to the node matrix iff it is not already in there.
      * @param node The (hopefully) unique node being added to the nodes array.
      */
     private void addNode(int node) {
@@ -82,16 +88,16 @@ public class Graph {
     }
     
     /**
-     * Returns to the user the node number, with the same index as the Edge Matrix.
-     * @param   pos The index from the adjacency matrix we want to know the node number of.
-     * @return  The full id/number of the node which corresponds to the index of the Adjacency Matrix.
+     * Returns the node number at the same index as the Edge Matrix
+     * @param  pos 
+     * @return 
      */
     public int getNode(int pos) {
         return nodes[pos];
     }
     
     /**
-     * Searches the nodes array to check whether or not a node has been added.
+     * Returns whether or not a node is in the array.
      * @param a     The array we are looking over.
      * @param query The node we are checking to see if if it has been added.
      * @return      The index of searched item or -1 if it is not found.
@@ -103,14 +109,7 @@ public class Graph {
         return false;
     }
     
-    /**
-     * Implements a Binary Search of the sorted nodes and returns the index of 
-     * the queried node if it exists.
-     * @param   query The vertex we want to find the 
-     * @return  The index of the queried vertex in the node matrix, iff it exists
-     * other wise return unknown (-1).
-     */
-    public int searchNodes(int query) {
+    public int BinarySearch(int query) {
         int min = 0;
         int max = nodeNum-1;
         while (max >= min) {
@@ -126,8 +125,8 @@ public class Graph {
     }
     
     /**
-     * The number of vertices in the graph.
-     * @return The number of vertices in the imported graph.
+     * 
+     * @return 
      */
     public int getNumberOfVertices() {
         return this.nodeNum;
@@ -138,12 +137,15 @@ public class Graph {
      * @return The stored adjacency matrix.
      */
     public int[][] getEdgeMatrix() {
-        return this.matrix;
+        int[][] m = new int[matrix.length][matrix.length];
+        for (int i = 0; i < m.length; i++) {
+            for (int j = 0; j < m.length; j++) {
+                m[i][j] = matrix[i][j];
+            }
+        }
+        return m;
     }
     
-    /**
-     * Prints the adjacency matrix.
-     */
     public void printEdgeMatrix() {
         for(int i = 0; i < this.matrix.length; i++) {
             for (int j = 0; j < this.matrix.length; j ++) {
@@ -154,11 +156,10 @@ public class Graph {
     }
     
     /**
-     * 
-     * @param  a  is the array of integers
-     * @param  p  lower bound of the range
-     * @param  r  upper bound of the range
-     * @return i  the pivot point value
+     * @param  a   is the array of integers
+     * @param  p   lower bound of the range
+     * @param  r   upper bound of the range
+     * @return i   the pivot point value
      */
     private int partition(int[] a, int p, int r) {
         int x = a[r];
@@ -178,7 +179,6 @@ public class Graph {
     }
     
     /**
-     * Implements the recursive part of the quicksort algorithm.
      * @param a the array of integers
      * @param p the lower bound of the array
      * @param r the upper bound of the array
